@@ -1,0 +1,41 @@
+# ─── Private data (never commit) ──────────────
+data/
+models/
+backend/.env
+*.db
+*.sqlite
+*.sqlite3
+
+# ─── Python ───────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# ─── Node / Vite ──────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# ─── Editor / OS ──────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Secrets ──────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Logs ─────────────────────────────────────
+logs/
