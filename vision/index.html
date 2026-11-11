@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#11112b">
+    <title>Vison · Eternal Mind live map</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, "Segoe UI", sans-serif;
+        background: #101020;
+        color: #eeefff;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        --panel: #17172d;
+        --line: #292943;
+        --muted: #9c9cb7;
+        --blue: #70b9fa;
+        --purple: #a38aff;
+        --green: #6de0b0;
+        --red: #ff7187;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; min-height: 100vh; }
+      button { font: inherit; }
+      .shell { width: min(1500px, 100%); margin: 0 auto; padding: 28px clamp(16px, 4vw, 52px) 40px; }
+      header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 26px; }
+      .brand { display: flex; align-items: center; gap: 13px; }
+      .mark { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #47416c; border-radius: 14px; color: var(--blue); background: linear-gradient(145deg, #242447, #15152c); font-size: 22px; }
+      h1 { font-size: clamp(22px, 3vw, 30px); letter-spacing: -.7px; margin: 0; }
+      .subtitle { color: var(--muted); font-size: 13px; margin: 5px 0 0; }
+      .watching { display: flex; align-items: center; gap: 9px; color: #b6b5ca; font-size: 12px; padding-top: 10px; white-space: nowrap; }
+      .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px #6de0b077; }
+      .pulse.offline { background: var(--red); box-shadow: 0 0 12px #ff718777; }
+      .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+      .stat, .panel { border: 1px solid var(--line); background: var(--panel); border-radius: 15px; }
+      .stat { padding: 17px 19px; min-height: 94px; }
+      .stat-label { color: var(--muted); font-size: 12px; }
+      .stat-value { display: block; font-size: 25px; letter-spacing: -.6px; margin-top: 8px; font-weight: 650; }
+      .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+      .panel { overflow: hidden; }
+      .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 17px 20px; border-bottom: 1px solid var(--line); }
+      h2 { font-size: 14px; margin: 0; font-weight: 600; }
+      .hint { color: var(--muted); font-size: 11px; }
+      .graph-wrap { min-height: 460px; max-height: 690px; overflow: auto; background-image: radial-gradient(#343450 1px, transparent 1px); background-size: 22px 22px; }
+      #graph { display: block; width: 100%; min-width: 690px; }
+      .edge { stroke: #555574; stroke-width: 1.5; opacity: .8; }
+      .edge.api { stroke: var(--purple); stroke-dasharray: 5 5; }
+      .node-box { fill: #20203b; stroke: #3c3b60; stroke-width: 1.3; }
+      .node-dot.frontend { fill: var(--blue); }
+      .node-dot.backend { fill: var(--purple); }
+      .node-dot.project { fill: #ffbd72; }
+      .node-label { fill: #e8e8f7; font-size: 12px; }
+      .node-path { fill: #9c9cb7; font-size: 9px; }
+      .lane-label { fill: #9c9cb7; font-size: 10px; letter-spacing: 1.5px; }
+      .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+      .legend span { display: inline-flex; gap: 7px; align-items: center; }
+      .swatch { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
+      .swatch.backend { background: var(--purple); }
+      .swatch.project { background: #ffbd72; }
+      aside { display: grid; gap: 16px; }
+      .service-list { padding: 3px 17px 8px; }
+      .service { display: grid; grid-template-columns: 9px minmax(0, 1fr); gap: 11px; padding: 13px 2px; border-bottom: 1px solid #29293e; }
+      .service:last-child { border-bottom: 0; }
+      .service-dot { width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: #77778f; }
+      .service-dot.online { background: var(--green); box-shadow: 0 0 10px #6de0b066; }
+      .service-dot.degraded { background: #ffbd72; }
+      .service-dot.offline { background: var(--red); }
+      .service-name { font-size: 12px; }
+      .service-detail { color: var(--muted); font-size: 10px; margin-top: 4px; overflow-wrap: anywhere; }
+      .file-tools { padding: 12px 16px 5px; }
+      input { width: 100%; border: 1px solid #373750; background: #111123; color: #eee; border-radius: 8px; padding: 9px 10px; outline: none; font-size: 11px; }
+      input:focus { border-color: #7771ba; }
+      .file-list { max-height: 300px; overflow: auto; padding: 4px 16px 12px; }
+      .file { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #29293e; }
+      .file-path { color: #d3d3e6; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .file-size { color: var(--muted); font-size: 9px; white-space: nowrap; }
+      .empty { color: var(--muted); text-align: center; padding: 65px 20px; font-size: 13px; }
+      .events { padding: 3px 18px 10px; }
+      .event { display: flex; gap: 9px; padding: 9px 0; color: #c6c6d9; font-size: 10px; border-bottom: 1px solid #29293e; }
+      .event-kind { min-width: 44px; color: var(--green); text-transform: uppercase; font-size: 9px; }
+      .event-kind.removed { color: var(--red); }
+      .event-path { overflow-wrap: anywhere; }
+      .notice { color: var(--muted); font-size: 10px; line-height: 1.55; padding: 0 19px 15px; }
+      .footer { margin-top: 15px; color: var(--muted); font-size: 10px; text-align: right; }
+      @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } aside { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 620px) { .shell { padding-top: 20px; } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } header { align-items: flex-start; } .watching { font-size: 10px; } aside { grid-template-columns: 1fr; } .graph-wrap { min-height: 340px; } }
+      :root {
+        --panel: rgba(18, 24, 43, .88);
+        --line: rgba(134, 158, 203, .15);
+        --muted: #8e9bb5;
+        --blue: #70d7f0;
+        --purple: #ae8cff;
+        --green: #6de0b0;
+        --red: #ff7187;
+      }
+      body {
+        background:
+          radial-gradient(ellipse at 12% -10%, rgba(80, 107, 190, .19), transparent 38%),
+          radial-gradient(ellipse at 100% 20%, rgba(119, 72, 177, .12), transparent 32%),
+          #0a0e19;
+      }
+      .shell { width: min(1640px, 100%); padding-top: 26px; }
+      header { align-items: center; margin-bottom: 25px; }
+      .mark { border-color: #3a6074; color: var(--blue); background: linear-gradient(145deg, #193747, #171a32); box-shadow: 0 0 32px #65cbe51a; }
+      h1 { letter-spacing: -.9px; }
+      .subtitle { letter-spacing: .15px; }
+      .watching { border: 1px solid var(--line); background: #101629; border-radius: 999px; padding: 9px 13px; }
+      .stats { gap: 14px; }
+      .stat, .panel { border-color: var(--line); background: var(--panel); box-shadow: 0 12px 35px #02040b24; backdrop-filter: blur(14px); }
+      .stat { position: relative; min-height: 106px; padding: 17px 19px; overflow: hidden; }
+      .stat::after { position: absolute; content: ""; height: 2px; left: 19px; right: 19px; bottom: 0; background: linear-gradient(90deg, #70d7f0aa, transparent); }
+      .stat-value { font-size: 28px; font-variant-numeric: tabular-nums; }
+      .layout { grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; }
+      .panel { border-radius: 13px; }
+      .panel-head { min-height: 55px; padding: 14px 18px; border-bottom-color: var(--line); }
+      h2 { letter-spacing: .1px; }
+      .hint { text-align: right; }
+      .graph-wrap { min-height: 480px; max-height: min(72vh, 840px); overflow: auto; background-color: #0e1422; background-image: radial-gradient(#34415a 1px, transparent 1px); background-size: 24px 24px; }
+      #graph { width: 100%; min-width: 0; height: auto; overflow: visible; }
+      .edge { fill: none; stroke: #546782; stroke-width: 1.4; opacity: .68; vector-effect: non-scaling-stroke; }
+      .edge.api { stroke: var(--purple); stroke-width: 1.8; stroke-dasharray: 6 6; opacity: .95; animation: flow 2.4s linear infinite; }
+      .edge.is-muted { opacity: .08; }
+      .edge.is-active { stroke: var(--blue); stroke-width: 2.4; opacity: 1; }
+      @keyframes flow { to { stroke-dashoffset: -24; } }
+      .node { cursor: pointer; }
+      .node-box { fill: #151e31; stroke: #34445f; stroke-width: 1.2; transition: fill .18s, stroke .18s, opacity .18s; }
+      .node:hover .node-box, .node.is-active .node-box { fill: #1b2b40; stroke: var(--blue); }
+      .node.is-muted { opacity: .25; }
+      .node-dot.frontend { fill: var(--blue); }
+      .node-dot.backend { fill: var(--purple); }
+      .node-dot.project { fill: #ffc078; }
+      .node-label { fill: #edf4ff; font-size: 12px; font-weight: 600; pointer-events: none; }
+      .node-path { fill: #8492ac; font-size: 9px; pointer-events: none; }
+      .lane-label { fill: #8091af; font-size: 10px; font-weight: 700; letter-spacing: 1.8px; }
+      .graph-tools { display: flex; align-items: center; gap: 8px; }
+      .graph-search { width: 170px; padding: 7px 9px; }
+      .tool-button { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; color: #c9d5ea; background: #11182a; cursor: pointer; }
+      .tool-button:hover { border-color: #70d7f0; color: #70d7f0; }
+      .graph-detail { min-height: 42px; display: flex; align-items: center; gap: 8px; padding: 9px 17px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+      .graph-detail strong { color: #e8efff; font-weight: 600; }
+      .legend { padding: 11px 17px; border-top-color: var(--line); }
+      aside { gap: 14px; }
+      .service-list { padding: 5px 16px 8px; }
+      .service { padding: 13px 1px; border-bottom-color: var(--line); }
+      .service-name { font-weight: 550; }
+      .service-detail { font-size: 10px; }
+      .file-tools { padding: 12px 14px 7px; }
+      input { border-color: #2a354a; background: #0d1422; padding: 10px 11px; font-size: 11px; }
+      input:focus { border-color: #5daec2; box-shadow: 0 0 0 3px #70d7f01c; }
+      .file-list { max-height: 290px; padding: 3px 15px 11px; }
+      .file { align-items: center; padding: 8px 0; border-bottom-color: var(--line); }
+      .file-path { font-family: "Cascadia Code", Consolas, monospace; font-size: 10px; }
+      .file-size { font-variant-numeric: tabular-nums; }
+      .event { border-bottom-color: var(--line); }
+      .notice { padding-top: 2px; }
+      .footer { padding-top: 2px; font-variant-numeric: tabular-nums; }
+      @media (max-width: 1050px) { .layout { grid-template-columns: minmax(0, 1fr) 290px; } .graph-search { width: 135px; } }
+      @media (max-width: 850px) { .layout { grid-template-columns: 1fr; } aside { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 620px) {
+        .shell { padding: 15px 12px 25px; }
+        header { flex-direction: column; gap: 14px; }
+        .watching { align-self: flex-start; }
+        .stats { gap: 8px; }
+        .stat { min-height: 88px; padding: 13px; }
+        .stat::after { left: 13px; right: 13px; }
+        .stat-value { font-size: 23px; }
+        aside { grid-template-columns: 1fr; }
+        .panel-head { padding: 12px; }
+        .graph-tools { gap: 5px; }
+        .graph-search { width: 105px; }
+        .graph-wrap { min-height: 360px; max-height: 62vh; }
+        .hint { font-size: 9px; }
+      }
+      html, body { width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+      body { background: #0a0e19; }
+      .shell {
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        padding: 12px 16px 14px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: 10px;
+      }
+      header { margin: 0; min-height: 42px; }
+      .mark { width: 34px; height: 34px; border-radius: 10px; font-size: 18px; }
+      h1 { font-size: 19px; }
+      .subtitle, .watching, .stats, aside, .legend, .footer { display: none !important; }
+      .layout { display: block; min-height: 0; }
+      .layout > .panel {
+        height: 100%;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        border-radius: 12px;
+      }
+      .panel-head { min-height: 44px; padding: 10px 15px; }
+      .graph-tools { display: none; }
+      .graph-wrap {
+        min-height: 0;
+        max-height: none;
+        height: 100%;
+        overflow: hidden;
+        background-color: #0d1320;
+      }
+      #graph { width: 100%; height: 100%; min-width: 0; }
+      .graph-detail { min-height: 34px; padding: 7px 15px; font-size: 10px; }
+      @media (max-width: 620px) {
+        .shell { padding: 8px; gap: 7px; }
+        .panel-head { min-height: 40px; }
+        .graph-detail { min-height: 30px; }
+      }
+      :root {
+        --hud: #6deaff;
+        --hud-soft: #44cbea;
+        --hud-dim: #527d91;
+      }
+      body {
+        background:
+          radial-gradient(ellipse at 50% 48%, #102333 0, #0b1421 42%, #070b13 100%);
+      }
+      .shell { padding: 10px 14px 12px; gap: 8px; }
+      header {
+        position: relative;
+        min-height: 48px;
+        padding: 0 12px;
+      }
+      header::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -5px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #55d9f055 10%, #55d9f033 90%, transparent);
+      }
+      .brand { gap: 11px; }
+      .mark {
+        position: relative;
+        width: 34px;
+        height: 34px;
+        border: 1px solid #53d9f088;
+        border-radius: 50%;
+        color: var(--hud);
+        background: radial-gradient(circle, #70e8ff26, #0d1b2b 68%);
+        box-shadow: 0 0 19px #3acff42a, inset 0 0 12px #3acff41a;
+        font-size: 19px;
+      }
+      .mark::after {
+        content: "";
+        position: absolute;
+        inset: -5px;
+        border: 1px dashed #58def05c;
+        border-radius: 50%;
+        animation: orbit 18s linear infinite;
+      }
+      @keyframes orbit { to { transform: rotate(360deg); } }
+      h1 {
+        color: #e4f9ff;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 1.1px;
+        text-transform: uppercase;
+      }
+      h1 span { color: var(--hud) !important; }
+      .hud-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: #94b5c5;
+        font: 10px "Cascadia Code", Consolas, monospace;
+        letter-spacing: 1.4px;
+      }
+      .hud-status span:first-child { color: #9bd8e6; }
+      #hud-clock { color: #e0f6ff; font-variant-numeric: tabular-nums; }
+      .hud-status::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--hud);
+        box-shadow: 0 0 10px var(--hud);
+        animation: blink 1.8s ease-in-out infinite;
+      }
+      .hud-status.offline::before {
+        background: #ff7187;
+        box-shadow: 0 0 10px #ff7187;
+      }
+      @keyframes blink { 50% { opacity: .35; } }
+      .layout { position: relative; }
+      .layout > .panel {
+        position: relative;
+        border: 1px solid #3c96ad65;
+        border-radius: 7px;
+        background: linear-gradient(135deg, #0c1a28ed, #0a111ddd 52%, #0c1926ed);
+        box-shadow: 0 0 35px #0abbe713, inset 0 0 45px #0a8ca20a;
+      }
+      .layout > .panel::before,
+      .layout > .panel::after {
+        position: absolute;
+        z-index: 3;
+        width: 25px;
+        height: 25px;
+        content: "";
+        pointer-events: none;
+      }
+      .layout > .panel::before {
+        top: 0;
+        left: 0;
+        border-top: 2px solid #67eaff;
+        border-left: 2px solid #67eaff;
+      }
+      .layout > .panel::after {
+        right: 0;
+        bottom: 0;
+        border-right: 2px solid #67eaff;
+        border-bottom: 2px solid #67eaff;
+      }
+      .panel-head {
+        position: relative;
+        min-height: 42px;
+        padding: 9px 16px;
+        border-bottom: 1px solid #4eddf02c;
+        background: linear-gradient(90deg, #53d7ed0c, transparent 62%);
+      }
+      h2 {
+        color: #bfeefa;
+        font: 10px "Cascadia Code", Consolas, monospace;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      .hint {
+        color: #7dabbc;
+        font: 9px "Cascadia Code", Consolas, monospace;
+        letter-spacing: .5px;
+      }
+      .graph-wrap {
+        position: relative;
+        isolation: isolate;
+        overflow: auto;
+        background-color: #09121e;
+        background-image:
+          linear-gradient(#2c81900c 1px, transparent 1px),
+          linear-gradient(90deg, #2c81900c 1px, transparent 1px),
+          radial-gradient(#54cddd30 .8px, transparent .8px);
+        background-size: 64px 64px, 64px 64px, 18px 18px;
+      }
+      .graph-wrap::before {
+        position: absolute;
+        z-index: 0;
+        top: 50%;
+        left: 50%;
+        width: min(62vw, 660px);
+        aspect-ratio: 1;
+        border: 1px solid #4bd7ed0d;
+        border-radius: 50%;
+        box-shadow: 0 0 0 36px #4bd7ed06, 0 0 0 86px #4bd7ed04, inset 0 0 80px #27b4d10b;
+        content: "";
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      .graph-wrap::after {
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 22%;
+        background: linear-gradient(180deg, transparent, #44e8ff08 48%, transparent);
+        content: "";
+        animation: scan 9s linear infinite;
+        pointer-events: none;
+      }
+      @keyframes scan {
+        from { transform: translateY(-100%); }
+        to { transform: translateY(500%); }
+      }
+      #graph { position: relative; z-index: 1; }
+      .lane-label {
+        fill: #69b4c6;
+        font: 700 10px "Cascadia Code", Consolas, monospace;
+        letter-spacing: 2.4px;
+      }
+      .edge {
+        stroke: #52798a;
+        stroke-width: 1.4;
+        opacity: .55;
+        transition: opacity .25s, stroke .25s;
+      }
+      .edge.api {
+        stroke: #65edff;
+        stroke-width: 2;
+        stroke-dasharray: 4 8;
+        opacity: .95;
+        filter: drop-shadow(0 0 4px #48dfffa6);
+        animation: data-flow 1.5s linear infinite;
+      }
+      @keyframes data-flow { to { stroke-dashoffset: -24; } }
+      .edge.is-active {
+        stroke: #8af3ff;
+        stroke-width: 2.4;
+        opacity: 1;
+        filter: drop-shadow(0 0 5px #55e7ff);
+      }
+      .edge.is-muted { opacity: .08; }
+      .node-box {
+        fill: #101f2d;
+        fill-opacity: .92;
+        stroke: #3c7384a3;
+        stroke-width: 1;
+        transition: fill .2s, stroke .2s, filter .2s;
+      }
+      .node:hover .node-box, .node.is-active .node-box {
+        fill: #123143;
+        stroke: #6cecff;
+        filter: drop-shadow(0 0 7px #42cfe84d);
+      }
+      .node-dot.frontend { fill: #63e9ff; filter: drop-shadow(0 0 4px #63e9ff); }
+      .node-dot.backend { fill: #ad9aff; filter: drop-shadow(0 0 4px #ad9aff); }
+      .node-dot.project { fill: #ffc97e; filter: drop-shadow(0 0 4px #ffc97e); }
+      .node-label { fill: #e0f6ff; font-weight: 600; }
+      .node-path { fill: #86a6b6; }
+      .node { cursor: pointer; }
+      .node:focus .node-box { stroke: #fff; stroke-width: 2; }
+      .graph-detail {
+        position: relative;
+        min-height: 31px;
+        padding: 7px 14px;
+        border-top: 1px solid #4eddf02c;
+        background: #07101a;
+        color: #83b3c2;
+        font: 9px "Cascadia Code", Consolas, monospace;
+        letter-spacing: .35px;
+      }
+      .graph-detail > span:first-child { color: var(--hud); }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div class="brand">
+          <div class="mark" aria-hidden="true">✳</div>
+          <div>
+            <h1>Vison <span style="color:#9e8cff">·</span> Eternal Mind</h1>
+          </div>
+        </div>
+        <div class="hud-status" id="hud-status"><span>NEURAL LINK</span><span id="hud-clock">--:--:--</span></div>
+      </header>
+
+      <div class="layout">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Project connections</h2>
+            <span class="hint" id="graph-summary">Updating live</span>
+          </div>
+          <div class="graph-wrap" id="graph-wrap"><svg id="graph" role="img" aria-label="Live project connection graph"></svg></div>
+          <div class="graph-detail" id="graph-detail"><span>◈</span><span id="graph-hint">Import links and API routes</span></div>
+        </section>
+      </div>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let selectedNode = null;
+      let latestGraph = null;
+      const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[char]);
+      const formatSize = (bytes) => bytes < 1024 ? `${bytes} B` : bytes < 1048576
+        ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
+      const formatUptime = (seconds) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return hours ? `${hours}h ${minutes}m` : minutes ? `${minutes}m` : `${seconds}s`;
+      };
+
+      function renderGraph(nodes, edges, omitted) {
+        const svg = $("graph");
+        const viewportWidth = Math.max(320, Math.round($("graph-wrap").clientWidth));
+        const height = Math.max(240, Math.round(svg.clientHeight));
+        const rowTop = 42;
+        const rowBottom = 18;
+        const getFolder = (node) => {
+          const firstPathPart = node.path.replaceAll("\\", "/").split("/")[0];
+          return node.path.includes("/") ? firstPathPart : "root";
+        };
+        const folderNames = [...new Set(nodes.map(getFolder))].sort((a, b) => {
+          const order = ["frontend", "backend", "root"];
+          const aOrder = order.indexOf(a);
+          const bOrder = order.indexOf(b);
+          if (aOrder !== -1 || bOrder !== -1) {
+            return (aOrder === -1 ? order.length : aOrder) - (bOrder === -1 ? order.length : bOrder);
+          }
+          return a.localeCompare(b);
+        });
+        const laneWidth = Math.max(viewportWidth / Math.max(folderNames.length, 1), 250);
+        const width = laneWidth * folderNames.length;
+        const cardWidth = Math.min(320, laneWidth * .78);
+        const palette = ["#63e9ff", "#ad9aff", "#ffc97e", "#6de0b0", "#ff8db3", "#83aaff", "#f0a8ff"];
+        const lanes = folderNames.map((name, index) => ({
+          key: name,
+          label: name === "root" ? "ROOT" : name.toUpperCase(),
+          x: laneWidth * (index + .5),
+          color: palette[index % palette.length],
+        }));
+        const grouped = Object.fromEntries(lanes.map((lane) => [lane.key, nodes.filter((node) => getFolder(node) === lane.key)]));
+        const maxNodes = Math.max(1, ...lanes.map((lane) => grouped[lane.key].length));
+        const spacing = (height - rowTop - rowBottom) / maxNodes;
+        const cardHeight = Math.min(48, Math.max(22, spacing * .78));
+        const labelSize = Math.min(14, Math.max(8, laneWidth / 24));
+        const pathSize = Math.max(8, labelSize - 3);
+        const positions = new Map();
+        const shapes = [];
+
+        for (const [laneIndex, lane] of lanes.entries()) {
+          const items = grouped[lane.key];
+          shapes.push(`<text class="lane-label" x="${lane.x}" y="20" text-anchor="middle"><title>${esc(lane.key)} folder</title>${esc(lane.label)}</text>`);
+          items.forEach((node, index) => {
+            const y = rowTop + spacing * (index + (maxNodes - items.length) / 2 + .5);
+            positions.set(node.id, { x: lane.x, y, color: palette[laneIndex % palette.length] });
+          });
+        }
+
+        const lines = edges.map((edge) => {
+          const from = positions.get(edge.source);
+          const to = positions.get(edge.target);
+          if (!from || !to) return "";
+          let path;
+          if (from.x === to.x) {
+            const direction = to.y > from.y ? 1 : -1;
+            const offset = Math.min(42, Math.abs(to.y - from.y) / 3);
+            path = `M ${from.x} ${from.y + direction * cardHeight / 2} C ${from.x + offset} ${from.y + direction * offset}, ${to.x + offset} ${to.y - direction * offset}, ${to.x} ${to.y - direction * cardHeight / 2}`;
+          } else {
+            const direction = to.x > from.x ? 1 : -1;
+            const startX = from.x + direction * cardWidth / 2;
+            const endX = to.x - direction * cardWidth / 2;
+            const bend = Math.max(28, Math.abs(endX - startX) * .42);
+            path = `M ${startX} ${from.y} C ${startX + bend * direction} ${from.y}, ${endX - bend * direction} ${to.y}, ${endX} ${to.y}`;
+          }
+          const active = selectedNode && (edge.source === selectedNode || edge.target === selectedNode);
+          const muted = selectedNode && !active;
+          return `<path class="edge ${edge.kind === "API" ? "api" : ""} ${active ? "is-active" : ""} ${muted ? "is-muted" : ""}" d="${path}"><title>${esc(edge.kind)}: ${esc(edge.source)} → ${esc(edge.target)}</title></path>`;
+        }).join("");
+
+        for (const node of nodes) {
+          const point = positions.get(node.id);
+          if (!point) continue;
+          const label = node.label.length > 24 ? `${node.label.slice(0, 21)}…` : node.label;
+          const active = selectedNode === node.id;
+          const connected = selectedNode && edges.some((edge) =>
+            (edge.source === selectedNode && edge.target === node.id) ||
+            (edge.target === selectedNode && edge.source === node.id)
+          );
+          const muted = selectedNode && !active && !connected;
+          const pathLabel = node.path.length > 38 ? `…${node.path.slice(-35)}` : node.path;
+          const compact = cardHeight < 38;
+          const labelY = compact ? point.y + labelSize * .34 : point.y - 2;
+          const pathLabelSvg = compact ? "" : `<text class="node-path" x="${point.x - cardWidth / 2 + 27}" y="${point.y + 14}" style="font-size:${pathSize}px">${esc(pathLabel)}</text>`;
+          shapes.push(`<g class="node ${active ? "is-active" : ""} ${muted ? "is-muted" : ""}" data-node="${esc(node.id)}" tabindex="0" role="button" aria-label="Select ${esc(node.path)}"><title>${esc(node.path)} · ${node.extension}</title><rect class="node-box" x="${point.x - cardWidth / 2}" y="${point.y - cardHeight / 2}" width="${cardWidth}" height="${cardHeight}" rx="9"></rect><circle class="node-dot" cx="${point.x - cardWidth / 2 + 14}" cy="${point.y}" r="4" style="fill:${point.color};filter:drop-shadow(0 0 4px ${point.color})"></circle><text class="node-label" x="${point.x - cardWidth / 2 + 25}" y="${labelY}" style="font-size:${labelSize}px">${esc(label)}</text>${pathLabelSvg}</g>`);
+        }
+
+        svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        svg.setAttribute("preserveAspectRatio", "none");
+        svg.style.width = `${width}px`;
+        svg.innerHTML = `<defs><filter id="node-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur><feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>${lines}${shapes.join("")}`;
+        $("graph-hint").textContent = `${nodes.length} files · ${edges.length} connections${omitted ? ` · ${omitted} more files not drawn` : ""}${selectedNode ? ` · selected ${selectedNode}` : ""}`;
+        svg.querySelectorAll(".node").forEach((element) => {
+          const select = () => {
+            selectedNode = selectedNode === element.dataset.node ? null : element.dataset.node;
+            renderGraph(nodes, edges, omitted);
+          };
+          element.addEventListener("click", select);
+          element.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              select();
+            }
+          });
+        });
+      }
+
+      async function refresh() {
+        try {
+          const response = await fetch("/api/snapshot", { cache: "no-store" });
+          if (!response.ok) throw new Error(`Watcher returned HTTP ${response.status}`);
+          const data = await response.json();
+          if (data.error) throw new Error(data.error);
+          $("graph-summary").textContent = `Live · rescanning every 4 seconds`;
+          $("hud-status").classList.remove("offline");
+          latestGraph = data;
+          renderGraph(data.nodes, data.edges, data.omittedNodes);
+        } catch (error) {
+          $("graph-summary").textContent = `Watcher error · ${error.message}`;
+          $("hud-status").classList.add("offline");
+        }
+      }
+
+      const updateClock = () => {
+        $("hud-clock").textContent = new Date().toLocaleTimeString([], { hour12: false });
+      };
+      updateClock();
+      setInterval(updateClock, 1000);
+      refresh();
+      window.addEventListener("resize", () => {
+        if (latestGraph) renderGraph(latestGraph.nodes, latestGraph.edges, latestGraph.omittedNodes);
+      });
+      setInterval(refresh, 4000);
+    </script>
+  </body>
+</html>
